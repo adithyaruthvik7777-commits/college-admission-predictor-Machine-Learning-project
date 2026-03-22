@@ -1,18 +1,372 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prediction Result</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --accent: #c8440a;
+    --muted: #7a7060;
+    --border: #c8c0b0;
+    --green: #2d7a4f;
+    --yellow: #b8960c;
+    --red: #b02020;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,0.025) 28px, rgba(0,0,0,0.025) 29px),
+      repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,0,0,0.012) 28px, rgba(0,0,0,0.012) 29px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 600px;
+    padding: 48px 24px 64px;
+  }
+
+  .stamp-ring {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    margin: 0 auto 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+  }
+
+  .stamp-ring::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px dashed var(--border);
+  }
+
+  .stamp-label {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .stamp-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 4.5rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .stamp-unit {
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .result-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 40px 44px;
+    box-shadow: 4px 4px 0 var(--cream), 6px 6px 0 var(--border);
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .card-eyebrow {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+  }
+
+  .verdict-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .verdict-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .verdict-icon.high  { background: #eaf5ee; color: var(--green); }
+  .verdict-icon.mid   { background: #fdf6e0; color: var(--yellow); }
+  .verdict-icon.low   { background: #fdeaea; color: var(--red); }
+
+  .verdict-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .verdict-title.high { color: var(--green); }
+  .verdict-title.mid  { color: var(--yellow); }
+  .verdict-title.low  { color: var(--red); }
+
+  .verdict-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    letter-spacing: 0.04em;
+  }
+
+  .bar-section { margin-bottom: 32px; }
+
+  .bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .bar-header span {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .bar-header strong {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  .progress-track { height: 6px; background: var(--cream); overflow: hidden; }
+
+  .progress-fill {
+    height: 100%;
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .progress-fill.high  { background: var(--green); }
+  .progress-fill.mid   { background: var(--yellow); }
+  .progress-fill.low   { background: var(--red); }
+
+  .scale-ticks { display: flex; justify-content: space-between; margin-top: 6px; }
+  .scale-ticks span { font-size: 9px; color: var(--border); letter-spacing: 0.1em; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  .tip-box {
+    background: var(--paper);
+    border-left: 3px solid var(--accent);
+    padding: 14px 16px;
+    margin-bottom: 28px;
+  }
+
+  .tip-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .tip-text { font-size: 11px; color: var(--muted); line-height: 1.8; letter-spacing: 0.04em; }
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 15px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    font-style: italic;
+    background: var(--ink);
+    color: white;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    border-radius: 1px;
+    transition: all 0.2s;
+  }
+
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .btn-primary:hover::after { transform: translateX(0); }
+
+  .btn-primary span {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary span::before { content: '←'; transition: transform 0.2s; }
+  .btn-primary:hover span::before { transform: translateX(-4px); }
+
+  .footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 10px;
+    color: var(--border);
+    letter-spacing: 0.15em;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.5s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @media (max-width: 520px) {
+    .result-card { padding: 28px 22px; }
+    .stamp-ring  { width: 180px; height: 180px; }
+    .stamp-score { font-size: 3.5rem; }
+  }
+</style>
 </head>
-
 <body>
+<div class="page-wrapper">
 
-<h2>Admission Prediction Result</h2>
+  <div class="stamp-ring">
+    <span class="stamp-label">Admit Chance</span>
+    <div class="stamp-score">{{ prediction }}</div>
+    <span class="stamp-unit">percent</span>
+  </div>
 
-<h3>Your Chance of Admit is:</h3>
+  <div class="result-card">
+    <div class="card-eyebrow">Admission Prediction Result</div>
 
-<h1>{{ prediction }} %</h1>
+    <div class="verdict-row">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-title" id="verdictTitle"></div>
+        <div class="verdict-desc"  id="verdictDesc"></div>
+      </div>
+    </div>
 
-<a href="/">Predict Again</a>
+    <div class="bar-section">
+      <div class="bar-header">
+        <span>Admission Probability</span>
+        <strong>{{ prediction }}%</strong>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="scale-ticks">
+        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+      </div>
+    </div>
 
+    <hr class="divider">
+
+    <div class="tip-box">
+      <div class="tip-label">Recommendation</div>
+      <div class="tip-text" id="tipText"></div>
+    </div>
+
+    <a href="/" class="btn-primary"><span>Predict Again</span></a>
+  </div>
+
+  <p class="footer">Predictive model · For reference only</p>
+</div>
+
+<script>
+  const pct  = Math.min(99, Math.round(parseFloat("{{ prediction }}") || 0));
+  const tier = pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low';
+
+  const config = {
+    high: {
+      icon:  '✦',
+      title: 'Strong Candidate',
+      desc:  'Your profile stands out. You have a high probability of securing admission. Focus on crafting a compelling personal statement to seal the deal.',
+      tip:   'Polish your SOP narrative and request strong LOR letters. Apply to your target university with confidence — your numbers are competitive.'
+    },
+    mid: {
+      icon:  '◈',
+      title: 'Competitive Profile',
+      desc:  'You are in a competitive range. Admission is possible but not guaranteed. Small improvements can meaningfully increase your chances.',
+      tip:   'Consider retaking the GRE if your score is below 315. A higher CGPA or an additional research project can push you into the strong range.'
+    },
+    low: {
+      icon:  '○',
+      title: 'Needs Strengthening',
+      desc:  'Your current profile may face challenges. However, targeted improvements in key areas can significantly improve your outcome.',
+      tip:   'Prioritise improving CGPA and GRE score — they carry the highest weight. Consider applying to universities with a lower rating to improve admit chances.'
+    }
+  };
+
+  const c = config[tier];
+
+  document.getElementById('verdictIcon').classList.add(tier);
+  document.getElementById('verdictIcon').textContent  = c.icon;
+  document.getElementById('verdictTitle').classList.add(tier);
+  document.getElementById('verdictTitle').textContent = c.title;
+  document.getElementById('verdictDesc').textContent  = c.desc;
+  document.getElementById('tipText').textContent      = c.tip;
+  document.getElementById('progressFill').classList.add(tier);
+
+  setTimeout(() => {
+    document.getElementById('progressFill').style.width = pct + '%';
+  }, 400);
+</script>
 </body>
 </html>

@@ -1,39 +1,354 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>College Admission Predictor</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graduate Admission Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --accent: #c8440a;
+    --accent-light: #e8622a;
+    --muted: #7a7060;
+    --border: #c8c0b0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,0.025) 28px, rgba(0,0,0,0.025) 29px),
+      repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,0,0,0.012) 28px, rgba(0,0,0,0.012) 29px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .masthead {
+    text-align: center;
+    margin-bottom: 52px;
+    animation: fadeDown 0.7s ease both;
+  }
+
+  .masthead-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .masthead h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1.0;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .masthead h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .masthead-rule {
+    width: 60px;
+    height: 2px;
+    background: var(--accent);
+    margin: 18px auto 16px;
+  }
+
+  .masthead-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+
+  .form-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 48px 44px;
+    box-shadow: 4px 4px 0 var(--cream), 6px 6px 0 var(--border);
+    animation: fadeUp 0.7s 0.15s ease both;
+  }
+
+  .section-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+  }
+
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 32px;
+    margin-bottom: 32px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .field:nth-child(1) { animation-delay: 0.20s; }
+  .field:nth-child(2) { animation-delay: 0.27s; }
+  .field:nth-child(3) { animation-delay: 0.34s; }
+  .field:nth-child(4) { animation-delay: 0.41s; }
+  .field:nth-child(5) { animation-delay: 0.48s; }
+  .field:nth-child(6) { animation-delay: 0.55s; }
+
+  .field label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .field .range-hint {
+    font-size: 10px;
+    color: var(--border);
+    letter-spacing: 0.05em;
+    margin-top: -4px;
+  }
+
+  .field input[type="number"] {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.15rem;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 8px 0;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  .field input[type="number"]::-webkit-inner-spin-button,
+  .field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .field input[type="number"]:focus { border-bottom-color: var(--accent); }
+
+  .research-field {
+    margin-bottom: 36px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.62s ease both;
+  }
+
+  .research-field label.main-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .toggle-group { display: flex; gap: 12px; }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 12px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: white;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    border-radius: 1px;
+  }
+
+  .toggle-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
+  }
+
+  .toggle-btn:hover:not(.active) {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 18px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-style: italic;
+    background: var(--accent);
+    color: white;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border-radius: 1px;
+    transition: all 0.2s;
+  }
+
+  .submit-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-light);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .submit-btn:hover::after { transform: translateX(0); }
+
+  .submit-btn span {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .submit-btn span::after { content: '→'; font-style: normal; transition: transform 0.2s; }
+  .submit-btn:hover span::after { transform: translateX(4px); }
+
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 10px;
+    color: var(--border);
+    letter-spacing: 0.15em;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.4s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 560px) {
+    .form-card { padding: 32px 24px; }
+    .fields-grid { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
-
 <body>
+<div class="page-wrapper">
 
-<h2>Graduate Admission Predictor</h2>
+  <header class="masthead">
+    <span class="masthead-label">Academic Intelligence Tool</span>
+    <h1>Graduate<br><em>Admission</em><br>Predictor</h1>
+    <div class="masthead-rule"></div>
+    <p class="masthead-sub">Enter your academic profile below</p>
+  </header>
 
-<form action="/predict" method="post">
+  <div class="form-card">
+    <div class="section-label">Academic Profile</div>
 
-GRE Score:
-<input type="number" name="gre" required><br><br>
+    <form action="/predict" method="POST">
 
-TOEFL Score:
-<input type="number" name="toefl" required><br><br>
+      <div class="fields-grid">
+        <div class="field">
+          <label for="gre">GRE Score</label>
+          <span class="range-hint">260 – 340</span>
+          <input type="number" id="gre" name="gre" min="260" max="340" placeholder="320" required>
+        </div>
+        <div class="field">
+          <label for="toefl">TOEFL Score</label>
+          <span class="range-hint">0 – 120</span>
+          <input type="number" id="toefl" name="toefl" min="0" max="120" placeholder="110" required>
+        </div>
+        <div class="field">
+          <label for="rating">University Rating</label>
+          <span class="range-hint">1.0 – 5.0</span>
+          <input type="number" id="rating" name="rating" step="0.1" min="1" max="5" placeholder="3.5" required>
+        </div>
+        <div class="field">
+          <label for="cgpa">CGPA</label>
+          <span class="range-hint">0.00 – 10.00</span>
+          <input type="number" id="cgpa" name="cgpa" step="0.01" min="0" max="10" placeholder="8.75" required>
+        </div>
+        <div class="field">
+          <label for="sop">SOP Strength</label>
+          <span class="range-hint">1.0 – 5.0</span>
+          <input type="number" id="sop" name="sop" step="0.1" min="1" max="5" placeholder="4.0" required>
+        </div>
+        <div class="field">
+          <label for="lor">LOR Strength</label>
+          <span class="range-hint">1.0 – 5.0</span>
+          <input type="number" id="lor" name="lor" step="0.1" min="1" max="5" placeholder="4.0" required>
+        </div>
+      </div>
 
-University Rating:
-<input type="number" name="rating" step="0.1" required><br><br>
+      <div class="research-field">
+        <label class="main-label">Research Experience</label>
+        <input type="hidden" id="research" name="research" value="0">
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" onclick="setResearch(0, this)">No Experience</button>
+          <button type="button" class="toggle-btn" onclick="setResearch(1, this)">Has Research</button>
+        </div>
+      </div>
 
-SOP Strength:
-<input type="number" name="sop" step="0.1" required><br><br>
+      <button type="submit" class="submit-btn">
+        <span>Predict My Chances</span>
+      </button>
 
-LOR Strength:
-<input type="number" name="lor" step="0.1" required><br><br>
+    </form>
+  </div>
 
-CGPA:
-<input type="number" name="cgpa" step="0.01" required><br><br>
+  <p class="footer">Predictive model · For reference only</p>
+</div>
 
-Research Experience (0 or 1):
-<input type="number" name="research" required><br><br>
-
-<button type="submit">Predict Admission Chance</button>
-
-</form>
-
+<script>
+  function setResearch(val, btn) {
+    document.getElementById('research').value = val;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
 </body>
 </html>

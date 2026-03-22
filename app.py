@@ -4,17 +4,14 @@ from sklearn.linear_model import LinearRegression
 
 app = Flask(__name__)
 
-# Load dataset
+# Load and prepare dataset
 df = pd.read_csv("admission_predict.csv")
-
-# Remove extra spaces in column names
 df.columns = df.columns.str.strip()
 
-# Features and target
-X = df[['GRE Score','TOEFL Score','University Rating','SOP','LOR','CGPA','Research']]
+# Train model
+X = df[['GRE Score', 'TOEFL Score', 'University Rating', 'SOP', 'LOR', 'CGPA', 'Research']]
 y = df['Chance of Admit']
 
-# Train model
 model = LinearRegression()
 model.fit(X, y)
 
@@ -24,20 +21,19 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-
-    gre = float(request.form['gre'])
-    toefl = float(request.form['toefl'])
-    rating = float(request.form['rating'])
-    sop = float(request.form['sop'])
-    lor = float(request.form['lor'])
-    cgpa = float(request.form['cgpa'])
+    gre      = float(request.form['gre'])
+    toefl    = float(request.form['toefl'])
+    rating   = float(request.form['rating'])
+    sop      = float(request.form['sop'])
+    lor      = float(request.form['lor'])
+    cgpa     = float(request.form['cgpa'])
     research = float(request.form['research'])
 
     input_data = [[gre, toefl, rating, sop, lor, cgpa, research]]
-
     prediction = model.predict(input_data)
 
-    result = round(prediction[0] * 100, 2)
+    result = round(float(prediction[0]) * 100, 2)
+    result = max(1.0, min(99.0, result))  # clamp between 1–99
 
     return render_template("result.html", prediction=result)
 
