@@ -247,7 +247,12 @@
     gap: 10px;
   }
 
-  .submit-btn span::after { content: '→'; font-style: normal; transition: transform 0.2s; }
+  .submit-btn span::after {
+    content: '\2192';
+    font-style: normal;
+    transition: transform 0.2s;
+  }
+
   .submit-btn:hover span::after { transform: translateX(4px); }
 
   .footer {
@@ -289,38 +294,44 @@
   <div class="form-card">
     <div class="section-label">Academic Profile</div>
 
-    <form action="/predict" method="POST">
+    <form action="/predict" method="POST" id="predictionForm">
 
       <div class="fields-grid">
         <div class="field">
           <label for="gre">GRE Score</label>
-          <span class="range-hint">260 – 340</span>
-          <input type="number" id="gre" name="gre" min="260" max="340" placeholder="320" required>
+          <span class="range-hint">260 &ndash; 340</span>
+          <input type="number" id="gre" name="gre" min="260" max="340"
+                 placeholder="320" required>
         </div>
         <div class="field">
           <label for="toefl">TOEFL Score</label>
-          <span class="range-hint">0 – 120</span>
-          <input type="number" id="toefl" name="toefl" min="0" max="120" placeholder="110" required>
+          <span class="range-hint">0 &ndash; 120</span>
+          <input type="number" id="toefl" name="toefl" min="0" max="120"
+                 placeholder="110" required>
         </div>
         <div class="field">
           <label for="rating">University Rating</label>
-          <span class="range-hint">1.0 – 5.0</span>
-          <input type="number" id="rating" name="rating" step="0.1" min="1" max="5" placeholder="3.5" required>
+          <span class="range-hint">1.0 &ndash; 5.0</span>
+          <input type="number" id="rating" name="rating" step="0.1" min="1" max="5"
+                 placeholder="3.5" required>
         </div>
         <div class="field">
           <label for="cgpa">CGPA</label>
-          <span class="range-hint">0.00 – 10.00</span>
-          <input type="number" id="cgpa" name="cgpa" step="0.01" min="0" max="10" placeholder="8.75" required>
+          <span class="range-hint">0.00 &ndash; 10.00</span>
+          <input type="number" id="cgpa" name="cgpa" step="0.01" min="0" max="10"
+                 placeholder="8.75" required>
         </div>
         <div class="field">
           <label for="sop">SOP Strength</label>
-          <span class="range-hint">1.0 – 5.0</span>
-          <input type="number" id="sop" name="sop" step="0.1" min="1" max="5" placeholder="4.0" required>
+          <span class="range-hint">1.0 &ndash; 5.0</span>
+          <input type="number" id="sop" name="sop" step="0.1" min="1" max="5"
+                 placeholder="4.0" required>
         </div>
         <div class="field">
           <label for="lor">LOR Strength</label>
-          <span class="range-hint">1.0 – 5.0</span>
-          <input type="number" id="lor" name="lor" step="0.1" min="1" max="5" placeholder="4.0" required>
+          <span class="range-hint">1.0 &ndash; 5.0</span>
+          <input type="number" id="lor" name="lor" step="0.1" min="1" max="5"
+                 placeholder="4.0" required>
         </div>
       </div>
 
@@ -328,8 +339,12 @@
         <label class="main-label">Research Experience</label>
         <input type="hidden" id="research" name="research" value="0">
         <div class="toggle-group">
-          <button type="button" class="toggle-btn active" onclick="setResearch(0, this)">No Experience</button>
-          <button type="button" class="toggle-btn" onclick="setResearch(1, this)">Has Research</button>
+          <button type="button" class="toggle-btn active"
+                  data-research-value="0"
+                  onclick="setResearch(0, this)">No Experience</button>
+          <button type="button" class="toggle-btn"
+                  data-research-value="1"
+                  onclick="setResearch(1, this)">Has Research</button>
         </div>
       </div>
 
@@ -340,15 +355,57 @@
     </form>
   </div>
 
-  <p class="footer">Predictive model · For reference only</p>
+  <p class="footer">Predictive model &middot; For reference only</p>
 </div>
 
+<script src="../static/predictor.js"></script>
 <script>
   function setResearch(val, btn) {
     document.getElementById('research').value = val;
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.toggle-btn').forEach((button) => button.classList.remove('active'));
     btn.classList.add('active');
   }
+
+  (function () {
+    const predictor = window.admissionPredictor;
+    const form = document.getElementById('predictionForm');
+    const savedValues = predictor.readInputFromSession();
+
+    if (savedValues) {
+      Object.keys(savedValues).forEach((fieldName) => {
+        const field = form.elements[fieldName];
+
+        if (field && field.type !== 'hidden') {
+          field.value = savedValues[fieldName];
+        }
+      });
+
+      const activeButton = document.querySelector(
+        '.toggle-btn[data-research-value="' + savedValues.research + '"]'
+      );
+
+      if (activeButton) {
+        setResearch(savedValues.research, activeButton);
+      }
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!form.reportValidity()) {
+        return;
+      }
+
+      const values = predictor.readInputFromForm(form);
+
+      if (!values) {
+        return;
+      }
+
+      predictor.storeInput(values);
+      window.location.href = predictor.getResultUrl() + '?' + predictor.toQueryString(values);
+    });
+  })();
 </script>
 </body>
 </html>

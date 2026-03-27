@@ -213,7 +213,12 @@
     margin-bottom: 6px;
   }
 
-  .tip-text { font-size: 11px; color: var(--muted); line-height: 1.8; letter-spacing: 0.04em; }
+  .tip-text {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    letter-spacing: 0.04em;
+  }
 
   .btn-primary {
     display: flex;
@@ -253,7 +258,7 @@
     gap: 8px;
   }
 
-  .btn-primary span::before { content: '←'; transition: transform 0.2s; }
+  .btn-primary span::before { content: '\2190'; transition: transform 0.2s; }
   .btn-primary:hover span::before { transform: translateX(-4px); }
 
   .footer {
@@ -288,7 +293,7 @@
 
   <div class="stamp-ring">
     <span class="stamp-label">Admit Chance</span>
-    <div class="stamp-score">{{ prediction }}</div>
+    <div class="stamp-score" id="predictionValue">--</div>
     <span class="stamp-unit">percent</span>
   </div>
 
@@ -299,14 +304,14 @@
       <div class="verdict-icon" id="verdictIcon"></div>
       <div>
         <div class="verdict-title" id="verdictTitle"></div>
-        <div class="verdict-desc"  id="verdictDesc"></div>
+        <div class="verdict-desc" id="verdictDesc"></div>
       </div>
     </div>
 
     <div class="bar-section">
       <div class="bar-header">
         <span>Admission Probability</span>
-        <strong>{{ prediction }}%</strong>
+        <strong id="predictionPercent">--%</strong>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="progressFill"></div>
@@ -323,50 +328,74 @@
       <div class="tip-text" id="tipText"></div>
     </div>
 
-    <a href="/" class="btn-primary"><span>Predict Again</span></a>
+    <a href="/" class="btn-primary" id="backLink"><span>Predict Again</span></a>
   </div>
 
-  <p class="footer">Predictive model · For reference only</p>
+  <p class="footer">Predictive model &middot; For reference only</p>
 </div>
 
+<script src="../static/predictor.js"></script>
 <script>
-  const pct  = Math.min(99, Math.round(parseFloat("{{ prediction }}") || 0));
-  const tier = pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low';
+  (function () {
+    const predictor = window.admissionPredictor;
+    const backLink = document.getElementById('backLink');
+    const values = predictor.readInputFromQuery() || predictor.readInputFromSession();
 
-  const config = {
-    high: {
-      icon:  '✦',
-      title: 'Strong Candidate',
-      desc:  'Your profile stands out. You have a high probability of securing admission. Focus on crafting a compelling personal statement to seal the deal.',
-      tip:   'Polish your SOP narrative and request strong LOR letters. Apply to your target university with confidence — your numbers are competitive.'
-    },
-    mid: {
-      icon:  '◈',
-      title: 'Competitive Profile',
-      desc:  'You are in a competitive range. Admission is possible but not guaranteed. Small improvements can meaningfully increase your chances.',
-      tip:   'Consider retaking the GRE if your score is below 315. A higher CGPA or an additional research project can push you into the strong range.'
-    },
-    low: {
-      icon:  '○',
-      title: 'Needs Strengthening',
-      desc:  'Your current profile may face challenges. However, targeted improvements in key areas can significantly improve your outcome.',
-      tip:   'Prioritise improving CGPA and GRE score — they carry the highest weight. Consider applying to universities with a lower rating to improve admit chances.'
+    backLink.href = predictor.getIndexUrl();
+
+    if (!values) {
+      window.location.replace(backLink.href);
+      return;
     }
-  };
 
-  const c = config[tier];
+    predictor.storeInput(values);
 
-  document.getElementById('verdictIcon').classList.add(tier);
-  document.getElementById('verdictIcon').textContent  = c.icon;
-  document.getElementById('verdictTitle').classList.add(tier);
-  document.getElementById('verdictTitle').textContent = c.title;
-  document.getElementById('verdictDesc').textContent  = c.desc;
-  document.getElementById('tipText').textContent      = c.tip;
-  document.getElementById('progressFill').classList.add(tier);
+    const prediction = predictor.predict(values);
 
-  setTimeout(() => {
-    document.getElementById('progressFill').style.width = pct + '%';
-  }, 400);
+    if (prediction === null) {
+      window.location.replace(backLink.href);
+      return;
+    }
+
+    const roundedPrediction = Math.round(prediction);
+    const tier = roundedPrediction >= 75 ? 'high' : roundedPrediction >= 50 ? 'mid' : 'low';
+    const config = {
+      high: {
+        icon: '+',
+        title: 'Strong Candidate',
+        desc: 'Your profile stands out. You have a high probability of securing admission. Focus on crafting a compelling personal statement to seal the deal.',
+        tip: 'Polish your SOP narrative and request strong LOR letters. Apply to your target university with confidence - your numbers are competitive.'
+      },
+      mid: {
+        icon: '~',
+        title: 'Competitive Profile',
+        desc: 'You are in a competitive range. Admission is possible but not guaranteed. Small improvements can meaningfully increase your chances.',
+        tip: 'Consider retaking the GRE if your score is below 315. A higher CGPA or an additional research project can push you into the strong range.'
+      },
+      low: {
+        icon: '-',
+        title: 'Needs Strengthening',
+        desc: 'Your current profile may face challenges. However, targeted improvements in key areas can significantly improve your outcome.',
+        tip: 'Prioritise improving CGPA and GRE score - they carry the highest weight. Consider applying to universities with a lower rating to improve admit chances.'
+      }
+    };
+    const verdict = config[tier];
+    const displayPrediction = prediction.toFixed(2);
+
+    document.getElementById('predictionValue').textContent = displayPrediction;
+    document.getElementById('predictionPercent').textContent = displayPrediction + '%';
+    document.getElementById('verdictIcon').classList.add(tier);
+    document.getElementById('verdictIcon').textContent = verdict.icon;
+    document.getElementById('verdictTitle').classList.add(tier);
+    document.getElementById('verdictTitle').textContent = verdict.title;
+    document.getElementById('verdictDesc').textContent = verdict.desc;
+    document.getElementById('tipText').textContent = verdict.tip;
+    document.getElementById('progressFill').classList.add(tier);
+
+    setTimeout(function () {
+      document.getElementById('progressFill').style.width = prediction + '%';
+    }, 400);
+  })();
 </script>
 </body>
 </html>
