@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "builds": [
     {
@@ -13,12 +14,3 @@
     }
   ]
 }
-```
-
----
-
-**Step 2 — Create `requirements.txt`** in your project root folder:
-```
-flask
-pandas
-scikit-learn
